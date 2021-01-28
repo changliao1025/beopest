@@ -1,0 +1,3 @@
+cp ../../pest13/src/msleep.c .
+mv ip.C ip.c
+mv matman.F matman.f

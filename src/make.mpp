@@ -1,0 +1,187 @@
+####################  System  ####################
+VPATH=../src
+#  Fortran compiler
+FC=gfortran -c -O3 -DUNIX -DFLUSHFILE
+#  C compiler
+CC=cc  -c -O3 -DUNIX
+#  Linker
+LD=gfortran -O3
+#  Archive
+AR=ar -rcs
+LDFLAGS=
+#  Compile With MPI
+FM=mpif90 -c -O3 -DUNIX -DFLUSHFILE -DBEOMPI
+LM=mpif90 -O3
+LMFLAGS=
+#  Compile Without MPI
+#FM=gfortran -c -O3 -DUNIX -DFLUSHFILE
+#LM=gfortran -O3
+####################  Definitions  ####################
+PEST=pest ppest supcalc
+SENS=sensan senschek
+UTL1=eigproc inschek jacwrit jco2jco jcotrans jcochek par2par paramfix parrep pestchek jcosub pestgen picalc ppause pslave pstop pstopst punpause svdaprep tempchek wtfactor ppd2asc ppd2par
+UTL2=parcalc obscalc
+UTL3=dercomb1 genlin jco2mat jcoaddz jcocomb jcoorder jcopcat jrow2mat jrow2vec obsrep paramerr pclc2mat pcov2mat pest2vec pestlin prederr prederr1 prederr2 pwtadj1 regerr resproc reswrit scalepar vec2pest veclog prederr3 pwtadj2 jcodiff regpred addreg1 randpar mulpartab comfilnme paramid postjactest genlinpred subreg1 phistats lhs2pest pest2lhs parreduce assesspar
+UTL4=cov2cor covcond mat2srf matadd matcolex matdiag matdiff matinvp matjoinc matjoind matjoinr matorder matprod matquad matrow matsmul matspec matsvd matsym mattrans matxtxi matxtxix mat2jco
+UTL5=cmaes_p sceua_p jactest rdmulres obs2obs
+#UTL6=supobspar supobsprep supobspar1
+EXE=$(PEST) $(UTL1) $(UTL2) $(UTL3) $(UTL4) $(UTL5) $(UTL6) $(SENS)
+
+#  Commonly use functions
+COMMON=space.o pgetcl.o nblnk.o openun.o orthog.o linpos.o lapack1.o writsig.o common.o pestwait.o msleep.o matman.o random.o randgen.o slinpos.o
+#  Pest functions shared by all versions of pest
+SHARED=pestsub1.o writall.o writint.o pardef.o drealrd.o optwt.o cgsolve.o compress.o readpest.o lsqr.o pestdata.o modrun.o pestsub2.o common_mod.o ms_stubs.o common.a
+
+all:$(EXE)
+
+clean:
+	rm -f *.a *.o *.mod
+
+clean_all:
+	rm -f *.a *.o *.mod *.exe $(EXE)
+
+clean_exe:
+	rm -f *.exe $(EXE)
+
+install:$(EXE)
+	cp -a $(EXE) $(OSHOME)/bin
+
+####################  Dependencies  ####################
+.SUFFIXES: .o .c .f .F .F90
+.F90.o:
+	$(FC) $<
+.F.o:
+	$(FC) $<
+.f.o:
+	$(FC) $<
+.c.o:
+	$(CC) $<
+#special beopest.o      beopest.F  $(FM) $<
+#special beorun.o       beorun.F   $(FC) -DPARALLEL -DBEO -o $@ $<
+#special parpest.o      parpest.F  $(FC) -DPARALLEL -DBEO -o $@ $<
+#special pest_par.o     pest.F     $(FC) -DPARALLEL -DBEO -o $@ $<
+#special runpest_par.o  runpest.F  $(FC) -DPARALLEL -DBEO -o $@ $<
+#special dercalc_par.o  dercalc.F  $(FC) -DPARALLEL -DBEO -o $@ $<
+#ignore mpif.h
+#ignore GENIE_DATA
+#ignore genie_data
+
+####################  Linker Commands  ####################
+#  Archive of commonly used functions
+common.a: $(COMMON)
+	$(AR) $@ $^
+#  Sequential PEST
+pest:       pest.o dercalc.o runpest.o $(SHARED)
+	$(LD) -o $@ $^ $(LDFLAGS)
+#  Parallel PEST
+ppest:      pest_par.o dercalc_par.o runpest_par.o beopest.o beorun.o ip.o parpest.o numdays.o $(SHARED)
+	$(LM) -o $@ $^ $(LMFLAGS)
+#  SupCalc
+supcalc:    supcalc.o  readpest.o compress.o certfile.o pestdata.o common.a;$(LD) -o $@ $^ $(LDFLAGS)
+#  Sensitivity
+sensan:     sensan.o sensub.o      common.a;$(LD) -o $@ $^ $(LDFLAGS)
+senschek:   senschek.o scheksub.o  common.a;$(LD) -o $@ $^ $(LDFLAGS)
+#  Utility 1
+pslave:     pslave.o sstop.o       common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pestchek:   pestchek.o cheksub.o   common.a;$(LD) -o $@ $^ $(LDFLAGS)
+eigproc:    eigproc.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+inschek:    inschek.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jacwrit:    jacwrit.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jco2jco:    jco2jco.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jcotrans:   jcotrans.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+par2par:    par2par.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+paramfix:   paramfix.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+parrep:     parrep.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pestgen:    pestgen.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+picalc:     picalc.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+ppause:     ppause.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pstop:      pstop.o                common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pstopst:    pstopst.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+punpause:   punpause.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+svdaprep:   svdaprep.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+tempchek:   tempchek.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+wtfactor:   wtfactor.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+ppd2asc:    ppd2asc.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+ppd2par:    ppd2par.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+#  Utility 2
+parcalc:    parcalc.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+obscalc:    obscalc.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+#  Utility 3
+dercomb1:   dercomb1.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+genlin:     genlin.o                common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jco2mat:    jco2mat.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jcoaddz:    jcoaddz.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jcoorder:   jcoorder.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jcopcat:    jcopcat.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jrow2mat:   jrow2mat.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jrow2vec:   jrow2vec.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+obsrep:     obsrep.o                common.a;$(LD) -o $@ $^ $(LDFLAGS)
+paramerr:   paramerr.o  certfile.o  common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pclc2mat:   pclc2mat.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pcov2mat:   pcov2mat.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pest2vec:   pest2vec.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pestlin:    pestlin.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+prederr:    prederr.o   certfile.o  common.a;$(LD) -o $@ $^ $(LDFLAGS)
+prederr1:   prederr1.o  certfile.o  common.a;$(LD) -o $@ $^ $(LDFLAGS)
+prederr2:   prederr2.o  certfile.o  common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pwtadj1:    pwtadj1.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+regerr:     regerr.o    certfile.o  common.a;$(LD) -o $@ $^ $(LDFLAGS)
+resproc:    resproc.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+reswrit:    reswrit.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+scalepar:   scalepar.o  certfile.o  common.a;$(LD) -o $@ $^ $(LDFLAGS)
+vec2pest:   vec2pest.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+veclog:     veclog.o                common.a;$(LD) -o $@ $^ $(LDFLAGS)
+prederr3:   prederr3.o  certfile.o  common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pwtadj2:    pwtadj2.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jcodiff:    jcodiff.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jcochek:    jcochek.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jcocomb:    jcocomb.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jcosub:     jcosub.o                common.a;$(LD) -o $@ $^ $(LDFLAGS)
+regpred:    regpred.o   certfile.o  common.a;$(LD) -o $@ $^ $(LDFLAGS)
+addreg1:    addreg1.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+randpar:    randpar.o   certfile.o  common.a;$(LD) -o $@ $^ $(LDFLAGS)
+mulpartab:  mulpartab.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+comfilnme:  comfilnme.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+paramid:    paramid.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+postjactest:postjactest.o           common.a;$(LD) -o $@ $^ $(LDFLAGS)
+genlinpred: genlinpred.o certfile.o common.a;$(LD) -o $@ $^ $(LDFLAGS)
+subreg1:    subreg1.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+phistats:   phistats.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+lhs2pest:   lhs2pest.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+pest2lhs:   pest2lhs.o   certfile.o common.a;$(LD) -o $@ $^ $(LDFLAGS)
+parreduce:  parreduce.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+assesspar:  assesspar.o  certfile.o common.a;$(LD) -o $@ $^ $(LDFLAGS)
+
+#  Utility 4
+cov2cor:    cov2cor.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+covcond:    covcond.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+mat2srf:    mat2srf.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matadd:     matadd.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matcolex:   matcolex.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matdiag:    matdiag.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matdiff:    matdiff.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matinvp:    matinvp.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matjoinc:   matjoinc.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matjoind:   matjoind.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matjoinr:   matjoinr.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matorder:   matorder.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matprod:    matprod.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matquad:    matquad.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matrow:     matrow.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matsmul:    matsmul.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matspec:    matspec.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matsvd:     matsvd.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matsym:     matsym.o               common.a;$(LD) -o $@ $^ $(LDFLAGS)
+mattrans:   mattrans.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matxtxi:    matxtxi.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+matxtxix:   matxtxix.o             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+mat2jco:    mat2jco.o              common.a;$(LD) -o $@ $^ $(LDFLAGS)
+#  Utility 5
+cmaes_p:    cmaes_p.o cmaes.o readpest.o common.o pestsub1.o writint.o mio.o compress.o prm.o pestdata.o certread.o slapack.o ms_stubs.o common.a;$(LD) -o $@ $^ $(LDFLAGS)
+sceua_p:    sceua_p.o sceua.o readpest.o common.o pestsub1.o writint.o mio.o compress.o prm.o pestdata.o                                 common.a;$(LD) -o $@ $^ $(LDFLAGS)
+jactest:    jactest.o         readpest.o common.o pestsub1.o writint.o mio.o compress.o prm.o pestdata.o                                 common.a;$(LD) -o $@ $^ $(LDFLAGS)
+rdmulres:   rdmulres.o                            pestsub1.o writint.o mio.o                                                             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+obs2obs:    obs2obs.o eqn.o                                  writint.o mio.o                                                             common.a;$(LD) -o $@ $^ $(LDFLAGS)
+#  Utility 6 (array_btree chokes gfortran)
+#supobsprep: supobsprep.o array_btree.o common.a;$(LD) -o $@ $^ $(LDFLAGS)
+#  Auto-generated dependencies
